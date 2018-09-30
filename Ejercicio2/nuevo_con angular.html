@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src= "http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.src.js"></script>
+</head>
+<body>
+  <div ng-app="" ng-controller="addressController"> 
+    <!--<ul>
+      <li ng-repeat="x in customMap.categories">
+      {{x}}<br><br>
+      </li>
+    </ul>-->
+    <ul>
+      <li ng-repeat="(k,v) in customMap.categories">
+      {{k  + ' Total= ' +  v.catTotalValue + ' Percent= ' +  v.catPercent}}<br><br>
+      </li>
+    </ul>
+    <ul>
+      <li ng-repeat="x in structureForPieChar">
+      {{'Categoria' + x.name  + ' porcentaje= ' +  x.y}}<br><br>
+      </li>
+    </ul>
+  </div>
+
+  <div id="containerLineChart"></div>
+  <div id="containerPieChart" ng-init="structureForPieChar" style="min-width: 310px; height: 400px; max-width: 600px; margin: 0 auto"></div>
+
+<script>
+
+function addressController($scope,$http,$q) {
+
+  var arrayPieChart = [];
+
+  $scope.customMap = {
+        categories:{},
+        totalValue:{}
+      }
+
+  let promises = {
+    data1: readJSON1($scope,$http),
+    data2: readJSON2($scope,$http),
+    data3: readJSON3($scope,$http)
+  }
+  $q.all(promises).then ((values)=>{
+  arrayPieChart = $scope.structureForPieChar;
+console.log("addressController++++++++++++++++++++++++++++++");
+
+console.log($scope.customMap.categories);
+  console.log($scope.customMap.categories['CAT 1']);
+   console.log(Object.keys($scope.customMap.categories));
+
+  console.log($scope.customMap.totalValue);
+  console.log(Object.keys($scope.customMap.totalValue));
+  console.log($scope.customMap.totalValue[0]);
+
+
+     setTimeout(percentage($scope,$http,$q), 2000) 
+    
+
+    //percentage($scope,$http,$q);
+   // console.log($scope.structureForPieChar);
+    Highcharts.chart('containerPieChart', {
+      chart: {
+          plotBackgroundColor: null,
+          plotBorderWidth: null,
+          plotShadow: false,
+          type: 'pie'
+      },
+      title: {
+          text: 'Test'
+      },
+      tooltip: {
+          pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+      },
+      plotOptions: {
+          pie: {
+              allowPointSelect: true,
+              cursor: 'pointer',
+              dataLabels: {
+                  enabled: true,
+                  format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                  style: {
+                      color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                  }
+              }
+          }
+      },
+      series: [{
+          name: 'Brands',
+          colorByPoint: true,
+          data: arrayPieChart
+      }]
+    });
+  });
+}
+
+
+
+function percentage($scope,$http,$q){
+
+console.log("percentage++++++++++++++++++++++++++++++");
+console.log(eval($scope.customMap.categories));                 //{}
+  console.log($scope.customMap.categories);                     //{}
+  console.log($scope.customMap.categories['CAT 1']);            //undefined
+   console.log(Object.keys($scope.customMap.categories));       //[]
+   console.log(Object.values($scope.customMap.categories));       //[]
+
+  console.log($scope.customMap.totalValue);                     //{}
+  console.log(Object.keys($scope.customMap.totalValue));        //[]
+  console.log($scope.customMap.totalValue[0]);                  //undefined
+
+  for (var k in Object.keys($scope.customMap.categories)){
+    console.log(k);
+  }
+  if($scope.isUndefined){
+    console.log("en percentage scope undefined")
+  }
+  else if ($scope.customMap.isUndefined){
+    console.log("en percentage customMap undefined")
+  }
+    // Prepare structure for PieChart
+    for (var k in $scope.customMap.categories){
+      $scope.customMap.categories[k].catPercent = $scope.customMap.categories[k].catTotalValue*100/$scope.customMap.totalValue["total"];
+
+      if(!$scope.structureForPieChar){
+        $scope.structureForPieChar=[];
+      }
+      $scope.structureForPieChar.push({name: k, y: $scope.customMap.categories[k].catPercent});
+      console.log("Category = " + k+ "catPercent = " +$scope.customMap.categories[k].catPercent + "tot = "+ $scope.customMap.totalValue["total"]+"catTot = "+$scope.customMap.categories[k].catTotalValue);
+    }
+}
+function readJSON1($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data1.json")
+    .success(function(response)
+      {
+      $scope.list1 = response;
+      treatResponse1($scope,$http);
+    }
+    );
+}
+function readJSON2($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data2.json")
+    .success(function(response)
+      {
+      $scope.list2 = response;
+      treatResponse2($scope,$http);
+    }
+    );
+}
+function readJSON3($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data3.json")
+    .success(function(response)
+      {
+      $scope.list3 = response;
+      treatResponse3($scope,$http);
+    }
+    );
+}
+function calculatePercentagesByCategory($scope,$http){
+    var tot = $scope.customMap.totalValue["total"];
+    for (var j in $scope.customMap.categories){
+      var percent = $scope.customMap.categories[j].catTotalValue*100/tot;
+      $scope.customMap.categories[j].catPercent = percent;
+    }
+}
+
+function treatResponse1($scope,$http){
+  for (i=0;i<$scope.list1.length;i++){
+
+      $scope.date = getDateFromMiliseconds($scope.list1[i].d);
+      $scope.category = $scope.list1[i].cat.toUpperCase();
+      $scope.value = $scope.list1[i].value;
+
+      addValuesTocustomMap($scope,$http);    
+    }
+}
+function treatResponse2($scope,$http){
+    for (i=0;i<$scope.list2.length;i++){
+
+      $scope.date = $scope.list2[i].myDate;
+      $scope.category = $scope.list2[i].categ;
+      $scope.value = $scope.list2[i].val;
+
+      addValuesTocustomMap($scope,$http);
+    }
+}
+function treatResponse3($scope,$http){
+
+    var regRawDate = (/\d{4}-\d{2}-\d{2}/);
+    var regRawCategory = (/#CAT\s\d#/);
+
+    for (i=0;i<$scope.list3.length;i++){
+
+      $scope.date = $scope.list3[i].raw.match(regRawDate);
+
+      $scope.category = $scope.list3[i].raw.match(regRawCategory).toString();
+      $scope.category = $scope.category.substring(1,$scope.category.length-1);
+
+      $scope.value = $scope.list3[i].val;
+
+      addValuesTocustomMap($scope,$http);
+    }
+  }
+function addValuesTocustomMap($scope,$http){
+    if (!$scope.customMap){
+      $scope.customMap = {
+        categories:{},
+        totalValue:{}
+      }
+    }
+    if (!$scope.customMap.categories[$scope.category]){
+      $scope.customMap.categories[$scope.category] = {
+        dates: {},
+        catTotalValue:0,
+        catPercent:0
+      };
+    }
+
+    if (!$scope.customMap.categories[$scope.category].dates[$scope.date]){
+      $scope.customMap.categories[$scope.category].dates[$scope.date] = $scope.value;
+    }
+    else if ($scope.customMap.categories[$scope.category].dates[$scope.date]){
+      var auxValue = $scope.customMap.categories[$scope.category].dates[$scope.date];
+      $scope.customMap.categories[$scope.category].dates[$scope.date] = auxValue + $scope.value;
+    }
+
+    var totalValue_byCategoy = $scope.customMap.categories[$scope.category].catTotalValue;
+    $scope.customMap.categories[$scope.category].catTotalValue = totalValue_byCategoy + $scope.value;
+
+    if(!$scope.customMap.totalValue["total"]){
+      $scope.customMap.totalValue["total"]=$scope.value;
+    }
+    else{
+      var tot = $scope.customMap.totalValue["total"]; 
+      $scope.customMap.totalValue["total"]=tot+$scope.value;
+    } 
+
+  }
+  function getDateFromMiliseconds (myDate){
+    var date = new Date(myDate);
+    var year = date.getFullYear();
+    var month = ("0" + (date.getMonth() + 1)).slice(-2);
+    var day = ("0" + date.getDate()).slice(-2);
+
+    return year+"-"+month+"-"+day
+  }
+  
+
+Highcharts.chart('containerLineChart', {
+
+    title: {
+        text: 'Test'
+    },
+
+    subtitle: {
+        text: ''
+    },
+
+    yAxis: {
+        title: {
+            text: ''
+        }
+    },
+    legend: {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'middle'
+    },
+
+    plotOptions: {
+        series: {
+            label: {
+                connectorAllowed: false
+            },
+            pointStart: 2010
+        }
+    },
+
+    series: [{
+        name: 'Installation',
+        data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]
+    }, {
+        name: 'Manufacturing',
+        data: [24916, 24064, 29742, 29851, 32490, 30282, 38121, 40434]
+    }, {
+        name: 'Sales & Distribution',
+        data: [11744, 17722, 16005, 19771, 20185, 24377, 32147, 39387]
+    }, {
+        name: 'Project Development',
+        data: [null, null, 7988, 12169, 15112, 22452, 34400, 34227]
+    }, {
+        name: 'Other',
+        data: [12908, 5948, 8105, 11248, 8989, 11816, 18274, 18111]
+    }],
+
+    responsive: {
+        rules: [{
+            condition: {
+                maxWidth: 500
+            },
+            chartOptions: {
+                legend: {
+                    layout: 'horizontal',
+                    align: 'center',
+                    verticalAlign: 'bottom'
+                }
+            }
+        }]
+    }
+
+});
+</script>
+</body>
+</html> 

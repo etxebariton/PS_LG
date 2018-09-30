@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<head>
+
+<script>
+	var valuesMap = new Map();
+	var percentageMap = new Map();
+
+	var customMap = 
+	{
+		categories:{
+			dates:{},
+			catTotalvalue:0,
+			catPercent:0
+		},
+		totalValue:0
+	}
+
+	var totalValue = 0;
+
+
+
+var getResult1 = async () =>{
+//function getResults1(){
+    var url = "http://s3.amazonaws.com/logtrust-static/test/test/data1.json";
+
+	await fetch(url).then(response => {
+		return response.json();
+	}).then(data => {
+		for (i=0;i<data.length;i++){
+
+			var date = getDateFromMiliseconds(data[i].d);
+			var category = data[i].cat.toUpperCase();
+			var value = data[i].value;
+
+			//console.log(date + " | " + category + " | " + value);
+			//addValuesTocustomMap(date,category,value)			
+
+			
+
+			//rellenar mapa para PIECHART
+			var valueAux = 0;
+			
+			if(valuesMap.has(category)){
+				valueAux = valuesMap.get(category);
+			}
+
+			var sum = valueAux + value;
+
+			valuesMap.set(category, sum);
+			totalValue = totalValue+value;		
+		}
+		//calculatePercentagesByCategory();
+
+		for(var key of valuesMap.keys()){
+			percentageMap1.set(key, valuesMap.get(key)*100/totalValue);
+		}
+		console.log ("getResult1");
+		return 1;
+		//chargePieChart(percentageMap);
+
+		//console.log(valuesMap.entries());
+		//console.log(percentageMap.entries());
+	}).catch(err => {
+		return 0;
+	});
+
+}
+
+
+
+var getResult2 = async () =>{
+//function getResults2(){
+    var url = "http://s3.amazonaws.com/logtrust-static/test/test/data2.json";
+
+	await fetch(url).then(response => {
+		return response.json();
+	}).then(data => {
+		for (i=0;i<data.length;i++){
+
+			var date = data[i].myDate;
+			var category = data[i].categ;
+			var value = data[i].val;
+
+			//console.log(date + " | " + category + " | " + value);
+			var valueAux = 0;
+			
+			if(valuesMap.has(category)){
+				valueAux = valuesMap.get(category);
+			}
+			var sum = valueAux + value;
+			valuesMap.set(category, sum);
+			totalValue = totalValue+value;
+		}
+
+		for(var key of valuesMap.keys()){
+			percentageMap2.set(key, valuesMap.get(key)*100/totalValue);
+		}
+
+		console.log("getResults2.2");
+		console.log(percentageMap.get("CAT 1"));
+
+		for(var key2 of percentageMap.keys()){
+				console.log(key2+ " = "+percentageMap.get(key2));
+		}
+		return 1;
+		//chargePieChart(percentageMap);
+
+	}).catch(err => {
+		return 0;
+	});
+}
+var getResult3 = async () =>{
+//function getResults3(){
+    var url = "http://s3.amazonaws.com/logtrust-static/test/test/data3.json";
+
+	await fetch(url).then(response => {
+		return response.json();
+	}).then(data => {
+		var regRawDate = (/\d{4}-\d{2}-\d{2}/);
+		var regRawCategory = (/#CAT\s\d#/);
+
+		for (i=0;i<data.length;i++){
+
+			
+			var dateString = data[i].raw.match(regRawDate);
+			dateString = "2017-02-29";
+
+			//if(checkIfDateIsCorrect(dateString)){
+
+				//Get category and erase # chars
+				var category = data[i].raw.match(regRawCategory).toString();
+				category = category.substring(1,category.length-1);
+
+				var value = data[i].val;
+
+				//console.log(dateString + " | " + category + " | " + value);
+				var valueAux = 0;
+			
+				if(valuesMap.has(category)){
+					valueAux = valuesMap.get(category);
+				}
+				var sum = valueAux + value;
+				valuesMap.set(category, sum);
+				totalValue = totalValue+value;
+			//}
+			//else console.log("ERROR DATE: "+dateString + " | " + category + " | " + value);
+		}
+
+		for(var key of valuesMap.keys()){
+			percentageMap3.set(key, valuesMap.get(key)*100/totalValue);
+		}
+		return 1;
+		//chargePieChart(percentageMap);
+	}).catch(err => {
+		return 0;
+	});
+}
+
+/*function checkIfDateIsCorrect(myDate){
+	var day = 
+	var month = 
+	var year = 
+
+	var date = new Date();
+	date.setFullYear (year, month-1, day);//Because month index starts from 0
+
+	if ((date.getFullYear() == year)&&(date.getMonth()==month)&&(date.getDate()==day)){
+		return true;
+	}
+	return false;
+}*/
+
+function getInputData(){
+	getResult1();
+	getResult2();
+	getResult3();
+
+/*console.log("getInputData: fin1: "+fin1+"fin2: "+fin2+"fin3: "+fin3);
+	if (fin1==1 && fin2==1 && fin3==1){
+*/
+		console.log("getInputData");
+
+		console.log(percentageMap);
+
+		//undefined++++++++++++++++++++++++++++++++++++++++
+		//console.log(percentageMap[0]);
+		for(var key2 of percentageMap.keys()){
+			console.log(key2+ " = "+percentageMap.get(key2));
+		}
+		//chargePieChart(percentageMap);
+//	}
+}
+
+function addValuesTocustomMap(date,category,value){
+	
+	if (!customMap.categories[category]){
+		customMap.categories[category] = {
+			dates: {},
+			catTotalValue:0,
+			catPercent:0
+		};
+	}
+
+	if (!customMap.categories[category].dates[date]){
+		customMap.categories[category].dates[date] = value;
+	}
+	else{
+		var auxValue = customMap.categories[category].dates[date];
+		customMap.categories[category].dates[date] = auxValue + value;
+	}
+
+	var totalValue_byCategoy = customMap.categories[category].catTotalValue;
+	customMap.categories[category].catTotalValue = totalValue_byCategoy + value;
+
+	var totalValue = customMap.totalValue;
+	customMap.totalValue = totalValue+value;
+}
+
+function calculatePercentagesByCategory(){
+	var numCategories;
+
+	for (var cat in customMap.categories){
+		customMap.categories[cat].catPercent = customMap.categories[cat].catTotalValue*100/customMap.totalValue;
+		//console.log(cat+" Cat total-->"+customMap.categories[cat].catTotalValue+" Total-->"+customMap.totalValue+" Percent-->"+customMap.categories[cat].catPercent);
+	}
+}
+
+function chargePieChart(percentageMap) {
+
+	var dataPointsArray = [];
+
+	//Convert percentages map to data points array format.
+	for (var key of percentageMap.keys()){
+		dataPointsArray.push({y: percentageMap.get(key), label: key});
+	}
+
+	//Build piechart
+	var chart = new CanvasJS.Chart("chartContainer", {
+		animationEnabled: true,
+		title: {
+			text: "Test PIE CHART"
+		},
+		data: [{
+			type: "pie",
+			startAngle: 240,
+			yValueFormatString: "##0.00\"%\"",
+			indexLabel: "{label} {y}",
+			dataPoints: dataPointsArray
+		}]
+	});
+	chart.render();
+}
+
+
+function getDateFromMiliseconds (myDate){
+	var date = new Date(myDate);
+	var year = date.getFullYear();
+	var month = ("0" + (date.getMonth() + 1)).slice(-2);
+	var day = ("0" + date.getDate()).slice(-2);
+
+	return year+"-"+month+"-"+day
+}
+</script>
+</head>
+<body>
+
+<div id="demo">
+<h2>The XMLHttpRequest Object</h2>
+<button type="button" onclick="getResults1()">Load Serie 1</button>
+<button type="button" onclick="getResults2()">Load Serie 2</button>
+<button type="button" onclick="getResults3()">Load Serie 3</button>
+<button type="button" onclick="getInputData()">Load ALL</button>
+<div id="chartContainer" style="height: 370px; width: 100%;"></div>
+</div>
+
+</body>
+</html>
