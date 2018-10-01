@@ -3,10 +3,9 @@ COMENTARIOS
 
 Ejercicio 1:
 
-La función no trata los números negativos y tampoco los repetidos. 
-Por otra parte, el resultado puede estar desordenado. Al utilizar un 
-mapa para gestionar los datos introducidos, a la hora de imprimir el 
-resultado, puede no mantener el mismo orden del input.
+La funciï¿½n no trata los nï¿½meros negativos y tampoco los repetidos.
+Por otra parte, el resultado puede estar desordenado.
 
 Ejercicio 2:
 
+Testeado en Chrome y Mozilla Firefox. No en IExplorer.
