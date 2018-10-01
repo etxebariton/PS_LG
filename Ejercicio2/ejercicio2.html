@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src= "http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.src.js"></script>
+</head>
+<body>
+	<div ng-app="" ng-controller="addressController"></div>
+	<br><br>
+	<div id="containerLineChart"></div>
+	<br><br>
+	<div id="containerPieChart" ng-init="structureForPieChar" style="min-width: 310px; height: 400px; max-width: 600px; margin: 0 auto"></div>
+<script>
+
+function addressController($scope,$http,$q) {
+
+	var arrayPieChart = [];
+
+	$scope.readyData1 = false;
+	$scope.readyData2 = false;
+	$scope.readyData3 = false;
+
+	$scope.customMap = {
+		categories:{},
+		totalValue:0
+	}
+
+	$scope.promises = {
+		data1: readJSON1($scope,$http),
+		data2: readJSON2($scope,$http),
+		data3: readJSON3($scope,$http)
+	}
+
+	$scope.$watch('readyData1 && readyData2 && readyData3', function (newVal, oldVal){
+		if(newVal == true){
+      
+	    	$q.all($scope.promises).then ((values)=>{
+
+	    		$scope.array_pie_chart = [];
+	    		$scope.array_line_chart = [];
+
+	    		for(var prop in $scope.customMap.categories){
+
+			      	//Prepare array for pie chart
+					var percent = $scope.customMap.categories[prop].catTotalValue * 100 / $scope.customMap.totalValue;
+					$scope.array_pie_chart.push({name: prop, y: percent});
+					
+					//Prepare array for line chart
+					var dates_values = [];
+					var dates=[];
+
+					for (var date in  $scope.customMap.categories[prop].dates){
+
+						var myDate = new Date(date);
+						var innerArray =[];
+
+						innerArray.push(Date.UTC(myDate.getFullYear(), myDate.getMonth(), myDate.getDate()),$scope.customMap.categories[prop].dates[date]);
+						dates_values.push(innerArray);
+						dates.push(new Date(date));
+					}
+
+					//Order dates
+					dates_values.sort(function (a, b) {
+						if (a[0] > b[0]) {
+							return 1;
+						}
+						if (a[0] < b[0]) {
+							return -1;
+						}
+						return 0;
+					});
+
+					//Get oldest date for each categoryto give an starting point to the chart
+					var min_date=[];
+					min_date.push(dates_values[0][0]);
+
+					$scope.array_line_chart.push({name : prop, data: dates_values});
+				}
+
+			    //Get oldest date for all categories
+
+				var allMin = new Date(Math.min.apply(null,min_date));
+				$scope.minimumDate = Date.UTC(allMin.getFullYear(), allMin.getMonth(), allMin.getDay());
+
+				Highcharts.chart('containerLineChart', {
+
+				    title: {
+				        text: 'Test'
+				    },
+				    legend: {
+				        layout: 'vertical',
+				        align: 'right',
+				        verticalAlign: 'middle'
+				    },
+					xAxis: {
+				        type: 'datetime',
+				        dateTimeLabelFormats: {
+				            day: '%e.%b'
+				        }
+				    },
+				    plotOptions: {
+				        series: {
+				            label: {
+				                connectorAllowed: false
+				            },
+				            pointStart: $scope.minimumDate
+				        }
+				    },
+				    series: $scope.array_line_chart,
+				    responsive: {
+				        rules: [{
+				            condition: {
+				                maxWidth: 500
+				            },
+				            chartOptions: {
+				                legend: {
+				                    layout: 'horizontal',
+				                    align: 'center',
+				                    verticalAlign: 'bottom'
+				                }
+				            }
+				        }]
+				    }
+				});
+			    Highcharts.chart('containerPieChart', {
+			        chart: {
+			            plotBackgroundColor: null,
+			            plotBorderWidth: null,
+			            plotShadow: false,
+			            type: 'pie'
+			        },
+			        title: {
+			            text: 'Test'
+			        },
+			        tooltip: {
+			            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+			        },
+			        plotOptions: {
+			            pie: {
+			                allowPointSelect: true,
+			                cursor: 'pointer',
+			                dataLabels: {
+			                    enabled: true,
+			                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+			                    style: {
+			                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+			                    }
+			                }
+			            }
+			        },
+			        series: [{
+			            name: 'Brands',
+			            colorByPoint: true,
+			            data: $scope.array_pie_chart
+			        }]
+			    });
+			});
+	    }
+  	})
+}
+function readJSON1($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data1.json")
+    .success(function(response)
+    {
+    	$scope.list1 = response;
+    	$scope.readyData1 = true;
+
+    	treatResponse1($scope,$http);
+    });
+}
+function readJSON2($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data2.json")
+    .success(function(response)
+    {
+    	$scope.list2 = response;
+    	$scope.readyData2 = true;
+
+    	treatResponse2($scope,$http);
+    });
+}
+function readJSON3($scope,$http){
+   $http.get("http://s3.amazonaws.com/logtrust-static/test/test/data3.json")
+    .success(function(response)
+    {
+    	$scope.list3 = response;
+    	$scope.readyData3 = true;
+
+    	treatResponse3($scope,$http);
+    });
+}
+function treatResponse1($scope,$http){
+
+	for (i=0;i<$scope.list1.length;i++){
+    	$scope.date = getDateFromMiliseconds($scope.list1[i].d);
+    	$scope.category = $scope.list1[i].cat.toUpperCase();
+    	$scope.value = $scope.list1[i].value;
+
+		addValuesTocustomMap($scope,$http);    
+    }
+}
+function treatResponse2($scope,$http){
+
+    for (i=0;i<$scope.list2.length;i++){
+
+		$scope.date = $scope.list2[i].myDate;
+		$scope.category = $scope.list2[i].categ;
+		$scope.value = $scope.list2[i].val;
+
+		addValuesTocustomMap($scope,$http);
+    }
+}
+function treatResponse3($scope,$http){
+
+    var regRawDate = (/\d{4}-\d{2}-\d{2}/);
+    var regRawCategory = (/#CAT\s\d#/);
+
+    for (i=0;i<$scope.list3.length;i++){
+
+		$scope.date = $scope.list3[i].raw.match(regRawDate);
+
+		$scope.category = $scope.list3[i].raw.match(regRawCategory).toString();
+		$scope.category = $scope.category.substring(1,$scope.category.length-1);
+
+		$scope.value = $scope.list3[i].val;
+
+		addValuesTocustomMap($scope,$http);
+    }
+}
+function addValuesTocustomMap($scope,$http){
+    if (!$scope.customMap){
+		$scope.customMap = {
+			categories:{},
+			totalValue:0
+		}
+    }
+    if (!$scope.customMap.categories[$scope.category]){
+		$scope.customMap.categories[$scope.category] = {
+			dates: [],
+			catTotalValue:0
+		};
+    }
+
+    if (!$scope.customMap.categories[$scope.category].dates[$scope.date]){
+		$scope.customMap.categories[$scope.category].dates[$scope.date] = $scope.value;
+    }
+    else if ($scope.customMap.categories[$scope.category].dates[$scope.date]){
+		var auxValue = $scope.customMap.categories[$scope.category].dates[$scope.date];
+		$scope.customMap.categories[$scope.category].dates[$scope.date] = auxValue + $scope.value;
+    }
+
+    var totalValue_byCategoy = $scope.customMap.categories[$scope.category].catTotalValue;
+    $scope.customMap.categories[$scope.category].catTotalValue = totalValue_byCategoy + $scope.value;
+
+    var tot = $scope.customMap.totalValue; 
+	$scope.customMap.totalValue=tot+$scope.value;
+}
+function getDateFromMiliseconds (myDate){
+    var date = new Date(myDate);
+    var year = date.getFullYear();
+    var month = ("0" + (date.getMonth() + 1)).slice(-2);
+    var day = ("0" + date.getDate()).slice(-2);
+
+    return year+"-"+month+"-"+day
+}
+</script>
+</body>
+</html> 
